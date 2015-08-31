@@ -11,7 +11,7 @@ echo '= Welcome to TechnionVideosDownload script, download video courses from th
 echo '============================================================================================='
 
 # Check Dependencies a script requires is available
-DEPENDENCIES="echo wget grep cut head tail msdl"
+DEPENDENCIES="wget grep cut head tail msdl"
 for i in $DEPENDENCIES; do
 	if ! type $i &>/dev/null; then 
 		echo "Required program dependency \"$i\" missing"  
