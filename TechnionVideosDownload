@@ -6,9 +6,18 @@ user=
 pass=
 server=https://video.technion.ac.il
 
-echo '====================================================================================='
+echo '============================================================================================='
 echo '= Welcome to TechnionVideosDownload script, download video courses from the Technion server ='
-echo '====================================================================================='
+echo '============================================================================================='
+
+# Check Dependencies a script requires is available
+DEPENDENCIES="echo wget grep cut head tail msdl"
+for i in $DEPENDENCIES; do
+	if ! type $i &>/dev/null; then 
+		echo "Required program dependency \"$i\" missing"  
+		exit
+	fi;
+done
 
 if (( $# <= 0 )) || (( $# >= 4 )) ; then
 	echo 'Error: wrong parameters number.'
