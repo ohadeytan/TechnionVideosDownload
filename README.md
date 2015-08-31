@@ -1,4 +1,4 @@
-# Target #
+# Goal #
 This bash script let you download videos of lectures & tutorials from the old technion server (http://video.technion.ac.il)
 
 # Dependencies #
