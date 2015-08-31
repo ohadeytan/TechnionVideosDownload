@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Written by Ohad Eytan ohadey@gmail.com
+
+user=
+pass=
+server=https://video.technion.ac.il
+
+echo '====================================================================================='
+echo '= Welcome to TechnionVideosDownload script, download video courses from the Technion server ='
+echo '====================================================================================='
+
+if (( $# <= 0 )) || (( $# >= 4 )) ; then
+	echo 'Error: wrong parameters number.'
+	exit
+fi;
+
+if [[ $1 != https://video.technion.ac.il/Courses/*.html ]]; then
+	echo 'Error: please insert valid course url (e.g https://video.technion.ac.il/Courses/PhysMech.html).'
+	exit
+fi;
+
+wget --post-data 'username='${user}'&password='${pass} $1 -q -O- > /dev/null
+if [[ $? -ne 0 ]]; then
+	echo 'Error: please insert exists course url (e.g http://video.technion.ac.il/Courses/PhysMech.html).'
+	exit
+fi;
+
+# Calculate the number of all the videos
+videos=`wget --post-data 'username='${user}'&password='${pass} $1 -O- -q | grep -a movies/rtsp -c`
+
+if (( $# >= 2 )) ; then
+	if ! [[ "$2" =~ ^[0-9]+$ ]]  || (( $2 == 0 )) ; then
+		echo 'Error: the second & third parameter can be only positive numbers.'
+		exit
+	fi;
+	if (( $2 > $videos )) ; then
+		echo 'Error: there is just' $videos 'videos.'
+		exit
+	fi;
+fi;
+
+if (( $# == 3 )) ; then
+	if ! [[ "$3" =~ ^[0-9]+$ ]] || (( $3 == 0 )) ; then
+		echo 'Error: the second & third parameter can be only positive numbers.'
+		exit
+	fi;
+	if  (( $3 > $videos )) ; then
+		echo 'Error: there is just' $videos 'videos.'
+		exit
+	fi;
+	if (( $3 < $2 )) ; then
+		echo 'Error: the third parameter bigger than the second.'
+		exit
+	fi;
+fi;
+
+# Let's rock!
+wget --post-data 'username='${user}'&password='${pass} $1 -O- -q | grep -a movies/rtsp | cut -d"'" -f4 | head -n ${3-$videos} | tail -n +${2-1} |
+while read line; do
+	echo Downloading `echo $line | cut -d"/" -f6`, please wait...
+	msdl -s2 `wget --post-data 'username='${user}'&password='${pass} $server$line -O- -q | grep -a 'window.location="rtsp' | cut -d"\"" -f2 ` -o `echo $line | cut -d"/" -f6`
+done
