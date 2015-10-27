@@ -6,12 +6,10 @@ user=
 pass=
 server=https://video.technion.ac.il
 
-echo '============================================================================================='
-echo '= Welcome to TechnionVideosDownload script, download video courses from the Technion server ='
-echo '============================================================================================='
+whiptail --title "TechnionVideosDownload" --msgbox "Welcome to TechnionVideosDownload script, download video courses from the Technion server\nTo access the videos you should enter your t2/tx/campus user name & password" 10 60;
 
-# Check Dependencies a script requires is available
-DEPENDENCIES="wget grep cut head tail msdl"
+# Check for script dependencies
+DEPENDENCIES="wget grep cut head tail msdl whiptail"
 for i in $DEPENDENCIES; do
 	if ! type $i &>/dev/null; then 
 		echo "Required program dependency \"$i\" missing"  
@@ -19,11 +17,21 @@ for i in $DEPENDENCIES; do
 	fi;
 done
 
+# Get username and password from user
+if [[ -z $user ]]; then
+	user=$(whiptail --title "User Name" --inputbox "Please insert your user name" --nocancel 10 60 3>&1 1>&2 2>&3)
+fi;
+if [[ -z $pass ]]; then
+	pass=$(whiptail --title "Password" --passwordbox "Please insert your password" --nocancel 10 60 3>&1 1>&2 2>&3)
+fi;
+
+# Check parameters number
 if (( $# <= 0 )) || (( $# >= 4 )) ; then
 	echo 'Error: wrong parameters number.'
 	exit
 fi;
 
+# Check url
 if [[ $1 != https://video.technion.ac.il/Courses/*.html ]]; then
 	echo 'Error: please insert valid course url (e.g https://video.technion.ac.il/Courses/PhysMech.html).'
 	exit
@@ -38,6 +46,7 @@ fi;
 # Calculate the number of all the videos
 videos=`wget --post-data 'username='${user}'&password='${pass} $1 -O- -q | grep -a movies/rtsp -c`
 
+# Check video numbers
 if (( $# >= 2 )) ; then
 	if ! [[ "$2" =~ ^[0-9]+$ ]]  || (( $2 == 0 )) ; then
 		echo 'Error: the second & third parameter can be only positive numbers.'
