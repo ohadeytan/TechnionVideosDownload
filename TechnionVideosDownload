@@ -17,6 +17,18 @@ for i in $DEPENDENCIES; do
 	fi;
 done
 
+# Check parameters number
+if (( $# <= 0 )) || (( $# >= 4 )) ; then
+	echo 'Error: wrong parameters number.'
+	exit
+fi;
+
+# Check url format
+if [[ $1 != https://video.technion.ac.il/Courses/*.html ]]; then
+	echo 'Error: please insert valid course url (e.g https://video.technion.ac.il/Courses/PhysMech.html).'
+	exit
+fi;
+
 # Get username and password from user
 if [[ -z $user ]]; then
 	user=$(whiptail --title "User Name" --inputbox "Please insert your user name" --nocancel 10 60 3>&1 1>&2 2>&3)
@@ -25,18 +37,7 @@ if [[ -z $pass ]]; then
 	pass=$(whiptail --title "Password" --passwordbox "Please insert your password" --nocancel 10 60 3>&1 1>&2 2>&3)
 fi;
 
-# Check parameters number
-if (( $# <= 0 )) || (( $# >= 4 )) ; then
-	echo 'Error: wrong parameters number.'
-	exit
-fi;
-
-# Check url
-if [[ $1 != https://video.technion.ac.il/Courses/*.html ]]; then
-	echo 'Error: please insert valid course url (e.g https://video.technion.ac.il/Courses/PhysMech.html).'
-	exit
-fi;
-
+# Check url validity
 wget --post-data 'username='${user}'&password='${pass} $1 -q -O- > /dev/null
 if [[ $? -ne 0 ]]; then
 	echo 'Error: please insert exists course url (e.g http://video.technion.ac.il/Courses/PhysMech.html).'
