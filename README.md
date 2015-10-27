@@ -5,7 +5,7 @@ This bash script let you download videos of lectures & tutorials from the old te
 You must install msdl (http://msdl.sourceforge.net)
 
 # Username and Password #
-You should edit the script and enter your username & password in lines 5-6 to access the server
+If you don't want to enter your username & password every time you can edit the script and enter them in lines 5-6 
 
 # Responsibility #
 Any use of this script is at the user own responsibility and should be according to the Israeli law and the Technion rules
