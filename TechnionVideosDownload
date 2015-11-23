@@ -6,8 +6,6 @@ user=
 pass=
 server=https://video.technion.ac.il
 
-whiptail --title "TechnionVideosDownload" --msgbox "Welcome to TechnionVideosDownload script, download video courses from the Technion server\nTo access the videos you should enter your t2/tx/campus user name & password" 10 60;
-
 # Check for script dependencies
 DEPENDENCIES="wget grep cut head tail msdl whiptail"
 for i in $DEPENDENCIES; do
@@ -16,6 +14,8 @@ for i in $DEPENDENCIES; do
 		exit
 	fi;
 done
+
+whiptail --title "TechnionVideosDownload" --msgbox "Welcome to TechnionVideosDownload script, download video courses from the Technion server\nTo access the videos you should enter your t2/tx/campus user name & password" 10 60;
 
 # Check parameters number
 if (( $# <= 0 )) || (( $# >= 4 )) ; then
