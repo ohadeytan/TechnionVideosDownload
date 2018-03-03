@@ -1,21 +1,58 @@
 #!/bin/bash
 
 # Written by Ohad Eytan ohadey@gmail.com
+# with the help of Shay Agros & Yoav Dim
 
 user=
 pass=
-server=https://video.technion.ac.il
-
+domain="campus.technion.ac.il"
+server="https://video.technion.ac.il"
 # Check for script dependencies
-DEPENDENCIES="wget grep cut head tail msdl whiptail"
+DEPENDENCIES="curl grep cut head tail msdl whiptail"
+cookie_file="shi_cookie.txt"
+
+# this function establishes a connection to the server
+# the function creates a cookie file
+function register_cookies {
+	# remove existing cookies file
+	rm -f ${cookie_file}
+	
+	# Get sessionID
+	SessionID=$(curl -s -i --location ${server} | \
+		sed -n -e "s/.*action.\+jsessionid=\([a-z0-9A-Z]\+\).\+/\1/p")
+	
+	JS_CREDENTIALS=$(curl -c ${cookie_file} \
+		-s "https://sason-p.technion.ac.il/idp/profile/SAML2/Redirect/SSO;jsessionid=${SessionID}?execution=e1s1" \
+		--data "j_username=${user}%40${domain}&j_password=${pass}&LogiN=${user}&ServeR=${domain}&PasswD=${pass}" \
+		--data "_eventId_proceed=%D7%94%D7%9E%D7%A9%D7%9A&Language=HEBREW" | sed -n -e '/<input.*name=/p')
+	
+	if [[ ! -f ./${cookie_file} ]]; then
+		echo Wrong credentials
+		exit 1
+	fi
+	
+	RelayState=$(echo "${JS_CREDENTIALS}" | \
+		sed -ne 's/.*<input.*name="RelayState".*value=".*;.*;\(.\+\)".*/\1/p')
+	SAMLResponse=$(echo "${JS_CREDENTIALS}" | \
+		sed -ne 's/.*<input.*name="SAMLResponse".*value="\(.\+\)".*/\1/p')
+	
+	curl -s -c ${cookie_file} -b ${cookie_file} -i -X POST \
+		--location 'https://video.technion.ac.il/Shibboleth.sso/SAML2/POST'  \
+		--data-urlencode "RelayState=ss:mem:${RelayState}" \
+		--data-urlencode "SAMLResponse=${SAMLResponse}" > /dev/null
+	
+	if [[ ! `grep -q '_shibsession_' ./${cookie_file}` -eq 0 ]]; then
+		echo Unable to establish connection, exiting
+		exit 2
+	fi
+}
+
 for i in $DEPENDENCIES; do
 	if ! type $i &>/dev/null; then 
 		echo "Required program dependency \"$i\" missing"  
 		exit
 	fi;
 done
-
-whiptail --title "TechnionVideosDownload" --msgbox "Welcome to TechnionVideosDownload script, download video courses from the Technion server\nTo access the videos you should enter your t2/tx/campus user name & password" 10 60;
 
 # Check parameters number
 if (( $# <= 0 )) || (( $# >= 4 )) ; then
@@ -29,7 +66,10 @@ if [[ $1 != https://video.technion.ac.il/Courses/*.html ]]; then
 	exit
 fi;
 
+whiptail --title "TechnionVideosDownload" --msgbox "Welcome to TechnionVideosDownload script, download video courses from the Technion server\nTo access the videos you should enter your t2/tx/campus user name & password" 10 60;
+
 # Get username and password from user
+
 if [[ -z $user ]]; then
 	user=$(whiptail --title "User Name" --inputbox "Please insert your user name" --nocancel 10 60 3>&1 1>&2 2>&3)
 fi;
@@ -37,17 +77,21 @@ if [[ -z $pass ]]; then
 	pass=$(whiptail --title "Password" --passwordbox "Please insert your password" --nocancel 10 60 3>&1 1>&2 2>&3)
 fi;
 
+# Check username and password validity
+register_cookies
+
 # Check url validity
-wget --post-data 'username='${user}'&password='${pass} $1 -q -O- > /dev/null
-if [[ $? -ne 0 ]]; then
+res=$(curl -s -I -w "%{http_code}" -o /dev/null -b ${cookie_file} $1)
+if [[ ${res} -ne 200 ]]; then
 	echo 'Error: please insert exists course url (e.g http://video.technion.ac.il/Courses/PhysMech.html).'
 	exit
 fi;
 
 # Calculate the number of all the videos
-videos=`wget --post-data 'username='${user}'&password='${pass} $1 -O- -q | grep -a movies/rtsp -c`
+videos=$(curl -s -b ${cookie_file} $1 | grep -a movies/rtsp -c)
 
 # Check video numbers
+
 if (( $# >= 2 )) ; then
 	if ! [[ "$2" =~ ^[0-9]+$ ]]  || (( $2 == 0 )) ; then
 		echo 'Error: the second & third parameter can be only positive numbers.'
@@ -75,8 +119,8 @@ if (( $# == 3 )) ; then
 fi;
 
 # Let's rock!
-wget --post-data 'username='${user}'&password='${pass} $1 -O- -q | grep -a movies/rtsp | cut -d"'" -f4 | head -n ${3-$videos} | tail -n +${2-1} |
+curl -s -b ${cookie_file} $1 | grep -a movies/rtsp | cut -d"'" -f4 | head -n ${3-$videos} | tail -n +${2-1} |
 while read line; do
 	echo Downloading `echo $line | cut -d"/" -f6`, please wait...
-	msdl -s2 `wget --post-data 'username='${user}'&password='${pass} $server$line -O- -q | grep -a 'window.location="rtsp' | cut -d"\"" -f2 ` -o `echo $line | cut -d"/" -f6`
+	msdl -s2 `curl -s -b ${cookie_file} $server$line | grep -a 'window.location="rtsp' | cut -d"\"" -f2 ` -o `echo $line | cut -d"/" -f6`
 done
