@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Written by Ohad Eytan ohadey@gmail.com
-# with the help of Shay Agros & Yoav Dim
+# Authentication by Shay Agros & Yoav Dim
 
 user=
 pass=
@@ -23,7 +23,11 @@ function register_cookies {
 	
 	JS_CREDENTIALS=$(curl -c ${cookie_file} \
 		-s "https://sason-p.technion.ac.il/idp/profile/SAML2/Redirect/SSO;jsessionid=${SessionID}?execution=e1s1" \
-		--data "j_username=${user}%40${domain}&j_password=${pass}&LogiN=${user}&ServeR=${domain}&PasswD=${pass}" \
+		--data "j_username=${user}%40${domain}" \
+		--data-urlencode "j_password=${pass}" \
+		--data "LogiN=${user}" \
+		--data "ServeR=${domain}" \
+		--data-urlencode "PasswD=${pass}" \
 		--data "_eventId_proceed=%D7%94%D7%9E%D7%A9%D7%9A&Language=HEBREW" | sed -n -e '/<input.*name=/p')
 	
 	if [[ ! -f ./${cookie_file} ]]; then
